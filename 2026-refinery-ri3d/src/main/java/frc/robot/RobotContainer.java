@@ -4,27 +4,26 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.pathfinding.LocalADStar;
+import com.pathplanner.lib.pathfinding.Pathfinding;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import static edu.wpi.first.wpilibj2.command.Commands.parallel;
+import static edu.wpi.first.wpilibj2.command.Commands.run;
+import static edu.wpi.first.wpilibj2.command.Commands.runEnd;
+import static edu.wpi.first.wpilibj2.command.Commands.runOnce;
 import edu.wpi.first.wpilibj2.command.button.CommandGenericHID;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-
-import static edu.wpi.first.wpilibj2.command.Commands.*;
-import static frc.robot.utils.Constants.ClimberConstants.k_highlimit;
-import static frc.robot.utils.Constants.ShooterConstants.k_shootermaxvel;
-
-import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.PathConstraints;
-import com.pathplanner.lib.pathfinding.LocalADStar;
-import com.pathplanner.lib.pathfinding.Pathfinding;
-import com.ctre.phoenix6.swerve.SwerveRequest;
-
 import frc.robot.subsystems.LLVision;
 import frc.robot.subsystems.mechanisms.Climber;
 import frc.robot.subsystems.mechanisms.Feeder;
@@ -35,7 +34,9 @@ import frc.robot.subsystems.swerve.CTRESwerve;
 import frc.robot.subsystems.swerve.SwerveTelemetry;
 import frc.robot.subsystems.swerve.SwerveTunerConstants;
 import frc.robot.utils.Constants.ClimberConstants;
+import static frc.robot.utils.Constants.ClimberConstants.k_highlimit;
 import frc.robot.utils.Constants.OIConstants;
+import static frc.robot.utils.Constants.ShooterConstants.k_shootermaxvel;
 import frc.robot.utils.Constants.SwerveConstants;
 
 public class RobotContainer {
@@ -57,29 +58,41 @@ public class RobotContainer {
   private final SendableChooser<Command> m_autochooser = new SendableChooser<>();
 
   // commands
-  private final Command m_hopperextend = runEnd(() -> m_hopper.extend(), () -> m_hopper.stop(), m_hopper).withTimeout(1.2);
-  private final Command m_hopperretract = runEnd(() -> m_hopper.retract(), () -> m_hopper.stop(), m_hopper).withTimeout(1.2);
+  private final Command m_hopperextend = runEnd(() -> m_hopper.extend(), () -> m_hopper.stopHopper(), m_hopper).withTimeout(1.2);
+  private final Command m_hopperretract = runEnd(() -> m_hopper.retract(), () -> m_hopper.stopHopper(), m_hopper).withTimeout(1.2);
+
   private final Command m_autofeed = parallel(
     runEnd(() -> m_feeder.feed(), () -> m_feeder.stop(), m_feeder),
-    runEnd(() -> m_hopper.retract(), () -> m_hopper.stop(), m_hopper)
+    runEnd(() -> {
+        m_hopper.retract();
+        m_hopper.agitate();
+    }, () -> {
+        m_hopper.stopHopper();
+        m_hopper.stopAgitate();
+    }, m_hopper)
   );
+
   private final Command m_manualfeed = runEnd(() -> m_feeder.feed(), () -> m_feeder.stop(), m_feeder);
   private final Command m_intakefloor = runEnd(() -> m_intake.intake(), () -> m_intake.stop(), m_intake);
+
   private final Command m_climberup = 
     runEnd(() -> m_climber.climberManual(6), () -> m_climber.climberStop(), m_climber)
     .until(() -> m_climber.averageDistance() > ClimberConstants.k_highlimit);
+
   private final Command m_climberdown =
     runEnd(() -> m_climber.climberManual(-6), () -> m_climber.climberStop(), m_climber)
     .until(() -> m_climber.averageDistance() < 0);
+
   private final Command m_climb = 
       runEnd(() -> m_climber.climberManual(-12), () -> m_climber.climberStop(), m_climber)
       .until(() -> m_climber.averageDistance() < k_highlimit / 2);
 
+  //currently using aimAndDrive2 (switch to aimAndDrive if previous function is too unstable)
   private final Command driveAndAim = m_swerve.applyRequest(() -> new SwerveRequest.RobotCentric()
         .withDriveRequestType(DriveRequestType.OpenLoopVoltage) // Use open-loop control for drive motors
-        .withVelocityX(MathUtil.applyDeadband((m_limelight.aimAndRange()[0]), OIConstants.k_limelightDeadZone) * SwerveConstants.k_maxlinspeed * 0.5) // x velocity
+        .withVelocityX(MathUtil.applyDeadband((m_limelight.aimAndRange2()[0]), OIConstants.k_limelightDeadZone) * SwerveConstants.k_maxlinspeed * 0.5) // x velocity
         .withVelocityY(MathUtil.applyDeadband(m_driverctlr.getRawAxis(0), OIConstants.k_deadzone) * SwerveConstants.k_maxlinspeed * 0.5) // y velocity
-        .withRotationalRate(MathUtil.applyDeadband((-m_limelight.aimAndRange()[1]), OIConstants.k_limelightDeadZone) * SwerveConstants.k_maxrotspeed) // z rot velocity
+        .withRotationalRate(MathUtil.applyDeadband((-m_limelight.aimAndRange2()[1]), OIConstants.k_limelightDeadZone) * SwerveConstants.k_maxrotspeed) // z rot velocity
     );
 
   // misc vars

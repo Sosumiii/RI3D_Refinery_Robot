@@ -4,23 +4,22 @@
 
 package frc.robot.utils;
 
-import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
-
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import frc.robot.subsystems.swerve.SwerveTunerConstants;
 
 public class Constants {
 
   public class OIConstants {
     public static final double k_deadzone = 0.2;
-    public static final double k_limelightDeadZone = 0.08;
+    public static final double k_limelightDeadZone = 0.06;
     public static final double k_maxlinspeedteleop = 3;
     public static final double k_maxrotspeedteleop = 2 * Math.PI;
   }
@@ -84,6 +83,16 @@ public class Constants {
   public class BootyConstants {
     // motor configuration
     public static final int k_hopperextendID = 23;
+    public static final int k_rumblePakID = 26;
+
+    public static final TalonFXConfiguration k_rumblepakconfig = new TalonFXConfiguration();
+    static {
+      k_rumblepakconfig.CurrentLimits.StatorCurrentLimit = 20;
+      k_rumblepakconfig.CurrentLimits.StatorCurrentLimitEnable = true;
+      k_rumblepakconfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+      k_rumblepakconfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+    }
+
     public static final TalonFXConfiguration k_hopperextendconfig = new TalonFXConfiguration();
     static {
       k_hopperextendconfig.CurrentLimits.StatorCurrentLimit = 20;
