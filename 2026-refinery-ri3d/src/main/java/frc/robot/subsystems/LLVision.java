@@ -10,8 +10,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.utils.LimelightHelpers;
 
 public class LLVision extends SubsystemBase {
-  private final PIDController rangeController = new PIDController(0.2, 0, 0);
-  private final PIDController aimController = new PIDController(0.2, 0, 0);
+  private final PIDController rangeController = new PIDController(0.1, 0, 0);
+  private final PIDController aimController = new PIDController(0.1, 0, 0);
 
   private static final double finalDistance = 3.0; //vertical offset
   
