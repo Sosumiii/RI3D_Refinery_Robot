@@ -6,14 +6,12 @@ package frc.robot;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.PathConstraints;
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.pathplanner.lib.pathfinding.LocalADStar;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -40,7 +38,6 @@ import static frc.robot.utils.Constants.ShooterConstants.k_shootermaxvel;
 import frc.robot.utils.Constants.SwerveConstants;
 
 public class RobotContainer {
-
   // joystick
   private final CommandGenericHID m_driverctlr = new CommandGenericHID(0);
 
@@ -60,6 +57,12 @@ public class RobotContainer {
   // commands
   private final Command m_hopperextend = runEnd(() -> m_hopper.extend(), () -> m_hopper.stopHopper(), m_hopper).withTimeout(1.2);
   private final Command m_hopperretract = runEnd(() -> m_hopper.retract(), () -> m_hopper.stopHopper(), m_hopper).withTimeout(1.2);
+
+  /* private final Command m_autofeed = parallel(
+    runEnd(() -> m_feeder.feed(), () -> m_feeder.stop(), m_feeder),
+    runEnd(() -> m_hopper.retract(), () -> m_hopper.stopHopper(), m_hopper)
+  ); */
+  
 
   private final Command m_autofeed = parallel(
     runEnd(() -> m_feeder.feed(), () -> m_feeder.stop(), m_feeder),
@@ -91,19 +94,32 @@ public class RobotContainer {
   private final Command driveAndAim = m_swerve.applyRequest(() -> new SwerveRequest.RobotCentric()
         .withDriveRequestType(DriveRequestType.OpenLoopVoltage) // Use open-loop control for drive motors
         .withVelocityX(MathUtil.applyDeadband((m_limelight.aimAndRange2()[0]), OIConstants.k_limelightDeadZone) * SwerveConstants.k_maxlinspeed * 0.5) // x velocity
-        .withVelocityY(MathUtil.applyDeadband(m_driverctlr.getRawAxis(0), OIConstants.k_deadzone) * SwerveConstants.k_maxlinspeed * 0.5) // y velocity
+        .withVelocityY(MathUtil.applyDeadband(-m_driverctlr.getRawAxis(0), OIConstants.k_deadzone) * SwerveConstants.k_maxlinspeed * 0.5) // y velocity
         .withRotationalRate(MathUtil.applyDeadband((-m_limelight.aimAndRange2()[1]), OIConstants.k_limelightDeadZone) * SwerveConstants.k_maxrotspeed) // z rot velocity
     );
+
+  private final Command shoot = runOnce(() -> shootervel = k_shootermaxvel);
+  private final Command stopShoot = runOnce(() -> shootervel = 0);
+
+  
 
   // misc vars
   private double shootervel = 0;
 
   public RobotContainer() {
+    NamedCommands.registerCommand("m_autofeed", m_autofeed);
+    NamedCommands.registerCommand("m_manualfeed", m_manualfeed);
+    NamedCommands.registerCommand("m_intakefloor", m_intakefloor);
+    NamedCommands.registerCommand("Shoot", shoot);
+    NamedCommands.registerCommand("Stop Shoot", stopShoot);
+    NamedCommands.registerCommand("m_hopperextend", m_hopperextend);
+    NamedCommands.registerCommand("m_hopperretract", m_hopperretract);
+
     // pathfinding algo
     Pathfinding.setPathfinder(new LocalADStar());
     m_swerve.configureAutobuilder();
     // add autos
-    // m_autochooser.setDefaultOption("Pathfind 1", m_swerve.pathfind(new Pose2d(2, 2, new Rotation2d())));
+    //m_autochooser.setDefaultOption("Pathfind 1", m_swerve.pathfind(new Pose2d(2, 2, new Rotation2d())));
     SmartDashboard.putData(m_autochooser);
     // default commands
     m_shooter.setDefaultCommand(shooterDefault());
@@ -112,6 +128,8 @@ public class RobotContainer {
     m_swerve.registerTelemetry(m_swervetelemetry::telemeterize);
     // configure triggers
     configureBindings();
+
+    
   }
 
   private void configureBindings() {
@@ -123,8 +141,8 @@ public class RobotContainer {
       m_swerve.applyRequest(() -> new SwerveRequest.SwerveDriveBrake())
     );
     // shooter velocity setpoint
-    m_driverctlr.button(8).onTrue(runOnce(() -> shootervel = k_shootermaxvel));
-    m_driverctlr.button(7).onTrue(runOnce(() -> shootervel = 0));
+    m_driverctlr.button(8).onTrue(shoot);
+    m_driverctlr.button(7).onTrue(stopShoot);
     // feeder controls
     m_driverctlr.button(2).whileTrue(m_autofeed);
     m_driverctlr.button(3).whileTrue(m_manualfeed);
@@ -140,6 +158,8 @@ public class RobotContainer {
     // aim
     new Trigger(() -> Math.abs(m_driverctlr.getRawAxis(2)) > 0.5)
     .whileTrue(driveAndAim);
+
+
   }
 
   /** Default command for the shooter subsytem. */
@@ -159,6 +179,7 @@ public class RobotContainer {
   }
 
   public Command getAutonomousCommand() {
-    return AutoBuilder.pathfindToPose(new Pose2d(1, 1, new Rotation2d()), PathConstraints.unlimitedConstraints(12));
+    //return AutoBuilder.pathfindToPose(new Pose2d(1, 1, new Rotation2d()), PathConstraints.unlimitedConstraints(12));
+    return new PathPlannerAuto("Copy of DUMB");
   }
 }

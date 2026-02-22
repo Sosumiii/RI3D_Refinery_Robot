@@ -73,7 +73,7 @@ public class LLVision extends SubsystemBase {
 
   @Override
   public void periodic() {
-    aimAndRange();
+    //aimAndRange();
     aimAndRange2();
   }
 }
