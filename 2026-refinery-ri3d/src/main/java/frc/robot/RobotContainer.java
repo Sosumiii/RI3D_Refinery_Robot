@@ -127,10 +127,17 @@ public class RobotContainer {
   private final Command stopShoot = runOnce(() -> shootervel = 0);
 
   private final Command m_shootAndFeed = parallel(
-    m_autofeed,
+
+    // Shooter starts immediately, stops on release
     startEnd(
         () -> shoot.schedule(),
         () -> stopShoot.schedule()
+    ),
+
+    // Delay before autofeed starts
+    sequence(
+        waitSeconds(0.75),
+        m_autofeed
     )
   );
 
@@ -162,7 +169,9 @@ public class RobotContainer {
     //m_autochooser.setDefaultOption("Pathfind 1", m_swerve.pathfind(new Pose2d(2, 2, new Rotation2d())));
     SmartDashboard.putData("DUMB", autoChooser);
     SmartDashboard.putData("Copy of DUMB", autoChooser);
-    SmartDashboard.putData("randomDUMB2", autoChooser);
+    //SmartDashboard.putData("line to hub", autoChooser);
+
+    //SmartDashboard.putData("randomDUMB2", autoChooser);
 
 
     // default commands

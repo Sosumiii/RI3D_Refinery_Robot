@@ -22,12 +22,12 @@ public class Intake extends SubsystemBase {
 
   /** Runs the intake and agitator forward. */
   public void intake() {
-    m_intakerollers.setVoltage(12);
+    m_intakerollers.setVoltage(9);
   }
 
   /** Runs the intake in revers to clear jams or dump game pieces. Maybe.*/
   public void outtake() {
-    m_intakerollers.setVoltage(-12);
+    m_intakerollers.setVoltage(-9);
   }
 
   /** Stops the motor. */

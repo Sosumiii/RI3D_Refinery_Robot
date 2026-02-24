@@ -7,13 +7,13 @@
         {
           "type": "path",
           "data": {
-            "pathName": "Rear center to Center"
+            "pathName": "Line to hub"
           }
         },
         {
-          "type": "path",
+          "type": "named",
           "data": {
-            "pathName": "Center to rear center"
+            "name": "Shoot and feed"
           }
         }
       ]
